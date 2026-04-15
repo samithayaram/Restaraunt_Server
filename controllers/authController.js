@@ -92,8 +92,17 @@ exports.login = async (req, res) => {
 exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
-        const subscription = await Subscription.findOne({ user: req.user.id });
+        let subscription = await Subscription.findOne({ user: req.user.id });
         
+        // Auto-create subscription if missing (SaaS "always-active" logic for testing/demo)
+        if (!subscription && user.role === 'RestaurantOwner') {
+            subscription = await Subscription.create({
+                user: user._id,
+                status: 'active',
+                planType: 'monthly'
+            });
+        }
+
         res.status(200).json({
             success: true,
             data: { user, subscription }
