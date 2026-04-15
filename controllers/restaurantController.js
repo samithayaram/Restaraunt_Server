@@ -4,22 +4,28 @@ const MenuItem = require('../models/MenuItem');
 
 exports.saveRestaurant = async (req, res) => {
     try {
-        const { id, name, description, address, slug } = req.body;
+        const slugify = (text) => text.toString().toLowerCase().trim()
+            .replace(/\s+/g, '-')           // Replace spaces with -
+            .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
+            .replace(/\-\-+/g, '-');         // Replace multiple - with single -
+
+        const cleanSlug = slugify(slug);
+        const CLIENT_URL = process.env.CLIENT_URL || 'https://restaraunt-saas.vercel.app';
         
         let restaurant;
         if (id) {
             // Update existing
             restaurant = await Restaurant.findOneAndUpdate(
                 { _id: id, owner: req.user.id },
-                { name, description, address, slug, qrCodeUrl: `${process.env.CLIENT_URL}/menu/${slug}` },
+                { name, description, address, slug: cleanSlug, qrCodeUrl: `${CLIENT_URL}/menu/${cleanSlug}` },
                 { new: true }
             );
         } else {
             // Create new
             restaurant = await Restaurant.create({
                 owner: req.user.id,
-                name, description, address, slug,
-                qrCodeUrl: `${process.env.CLIENT_URL}/menu/${slug}` 
+                name, description, address, slug: cleanSlug,
+                qrCodeUrl: `${CLIENT_URL}/menu/${cleanSlug}` 
             });
         }
 
