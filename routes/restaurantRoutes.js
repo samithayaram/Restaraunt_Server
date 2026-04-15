@@ -15,7 +15,7 @@ router.get('/public/:slug', getPublicMenu);
 
 // Protected routes for restaurant owners
 router.post('/', protect, authorize('RestaurantOwner', 'SuperAdmin'), saveRestaurant);
-router.get('/', protect, authorize('RestaurantOwner', 'SuperAdmin'), getRestaurant);
+router.get('/', protect, authorize('RestaurantOwner', 'SuperAdmin'), getRestaurants);
 router.post('/categories', protect, authorize('RestaurantOwner', 'SuperAdmin'), addCategory);
 router.post('/menu-items', protect, authorize('RestaurantOwner', 'SuperAdmin'), addMenuItem);
 
