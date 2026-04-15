@@ -49,7 +49,7 @@ exports.register = async (req, res) => {
         if (user.role === 'RestaurantOwner') {
             await Subscription.create({ 
                 user: user._id, 
-                status: 'active', // Bypassing Stripe paywall locally
+                status: 'incomplete', 
                 planType: 'monthly' 
             });
         }
@@ -94,11 +94,11 @@ exports.getMe = async (req, res) => {
         const user = await User.findById(req.user.id);
         let subscription = await Subscription.findOne({ user: req.user.id });
         
-        // Auto-create subscription if missing (SaaS "always-active" logic for testing/demo)
+        // Auto-create subscription if missing (Set to 'incomplete' so they see the paywall once)
         if (!subscription && user.role === 'RestaurantOwner') {
             subscription = await Subscription.create({
                 user: user._id,
-                status: 'active',
+                status: 'incomplete', 
                 planType: 'monthly'
             });
         }
