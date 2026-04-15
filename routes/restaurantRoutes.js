@@ -1,7 +1,7 @@
 const express = require('express');
 const { 
     saveRestaurant, 
-    getRestaurant, 
+    getRestaurants, 
     getPublicMenu, 
     addCategory, 
     addMenuItem 

@@ -4,34 +4,39 @@ const MenuItem = require('../models/MenuItem');
 
 exports.saveRestaurant = async (req, res) => {
     try {
-        const { name, description, address, slug } = req.body;
+        const { id, name, description, address, slug } = req.body;
         
-        // Owner logic: a user can have one restaurant
-        let restaurant = await Restaurant.findOne({ owner: req.user.id });
-        
-        if (restaurant) {
-            restaurant.name = name;
-            restaurant.description = description;
-            restaurant.address = address;
-            restaurant.slug = slug;
-            await restaurant.save();
+        let restaurant;
+        if (id) {
+            // Update existing
+            restaurant = await Restaurant.findOneAndUpdate(
+                { _id: id, owner: req.user.id },
+                { name, description, address, slug, qrCodeUrl: `${process.env.CLIENT_URL}/menu/${slug}` },
+                { new: true }
+            );
         } else {
+            // Create new
             restaurant = await Restaurant.create({
                 owner: req.user.id,
                 name, description, address, slug,
                 qrCodeUrl: `${process.env.CLIENT_URL}/menu/${slug}` 
             });
         }
+
+        if (!restaurant) {
+            return res.status(404).json({ success: false, message: 'Restaurant not found or unauthorized' });
+        }
+
         res.status(200).json({ success: true, data: restaurant });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
 };
 
-exports.getRestaurant = async (req, res) => {
+exports.getRestaurants = async (req, res) => {
     try {
-        const restaurant = await Restaurant.findOne({ owner: req.user.id });
-        res.status(200).json({ success: true, data: restaurant });
+        const restaurants = await Restaurant.find({ owner: req.user.id });
+        res.status(200).json({ success: true, data: restaurants });
     } catch (error) {
         res.status(500).json({ success: false, message: error.message });
     }
@@ -66,9 +71,9 @@ exports.getPublicMenu = async (req, res) => {
 
 exports.addCategory = async (req, res) => {
     try {
-        const { name, order } = req.body;
-        const restaurant = await Restaurant.findOne({ owner: req.user.id });
-        if (!restaurant) return res.status(404).json({ success: false, message: 'Create a restaurant profile first.' });
+        const { restaurantId, name, order } = req.body;
+        const restaurant = await Restaurant.findOne({ _id: restaurantId, owner: req.user.id });
+        if (!restaurant) return res.status(404).json({ success: false, message: 'Restaurant not found or unauthorized.' });
 
         const category = await Category.create({ restaurant: restaurant._id, name, order });
         res.status(201).json({ success: true, data: category });
@@ -79,9 +84,9 @@ exports.addCategory = async (req, res) => {
 
 exports.addMenuItem = async (req, res) => {
     try {
-        const { categoryId, name, description, price, image } = req.body;
-        const restaurant = await Restaurant.findOne({ owner: req.user.id });
-        if (!restaurant) return res.status(404).json({ success: false, message: 'Create a restaurant profile first.' });
+        const { restaurantId, categoryId, name, description, price, image } = req.body;
+        const restaurant = await Restaurant.findOne({ _id: restaurantId, owner: req.user.id });
+        if (!restaurant) return res.status(404).json({ success: false, message: 'Restaurant not found or unauthorized.' });
 
         const item = await MenuItem.create({ 
             restaurant: restaurant._id, 
