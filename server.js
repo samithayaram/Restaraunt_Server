@@ -13,8 +13,21 @@ connectDB();
 const app = express();
 
 // Middleware
+const allowedOrigins = [
+    'https://restaraunt-admin.vercel.app',
+    'https://restaraunt-saas.vercel.app',
+    'http://localhost:5173',
+    'http://localhost:5174'
+];
+
 app.use(cors({
-    origin: true,
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    },
     credentials: true,
 }));
 
