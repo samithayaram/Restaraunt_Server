@@ -21,6 +21,19 @@ const menuItemSchema = new mongoose.Schema({
         required: [true, 'Please add a price']
     },
     image: String,
+    itemType: {
+        type: String,
+        enum: ['veg', 'non-veg'],
+        default: 'veg'
+    },
+    isBestSeller: {
+        type: Boolean,
+        default: false
+    },
+    isTodaysSpecial: {
+        type: Boolean,
+        default: false
+    },
     isAvailable: {
         type: Boolean,
         default: true

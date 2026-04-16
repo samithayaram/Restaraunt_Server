@@ -13,13 +13,14 @@ exports.saveRestaurant = async (req, res) => {
             .replace(/\-\-+/g, '-');         // Replace multiple - with single -
 
         const cleanSlug = slugify(slug || name);
+
         const CLIENT_URL = process.env.CLIENT_URL || 'https://restaraunt-saas.vercel.app';
-        
+
         // Check if slug is already taken (excluding current restaurant if updating)
         if (cleanSlug) {
-            const slugExists = await Restaurant.findOne({ 
-                slug: cleanSlug, 
-                _id: { $ne: id } 
+            const slugExists = await Restaurant.findOne({
+                slug: cleanSlug,
+                _id: { $ne: id }
             });
             if (slugExists) {
                 return res.status(400).json({ success: false, message: 'This slug or restaurant name is already taken. Please choose another.' });
@@ -40,7 +41,7 @@ exports.saveRestaurant = async (req, res) => {
                 owner: req.user.id,
                 name, description, address, slug: cleanSlug,
                 logo,
-                qrCodeUrl: `${CLIENT_URL}/menu/${cleanSlug}` 
+                qrCodeUrl: `${CLIENT_URL}/menu/${cleanSlug}`
             });
         }
 
@@ -73,10 +74,10 @@ exports.getPublicMenu = async (req, res) => {
         if (!restaurant.isActive) {
             return res.status(403).json({ success: false, message: 'Restaurant is currently inactive' });
         }
-        
+
         const categories = await Category.find({ restaurant: restaurant._id }).sort('order');
         const menuItems = await MenuItem.find({ restaurant: restaurant._id });
-        
+
         res.status(200).json({
             success: true,
             data: {
@@ -105,14 +106,14 @@ exports.addCategory = async (req, res) => {
 
 exports.addMenuItem = async (req, res) => {
     try {
-        const { restaurantId, categoryId, name, description, price, image } = req.body;
+        const { restaurantId, categoryId, name, description, price, image, itemType, isBestSeller, isTodaysSpecial } = req.body;
         const restaurant = await Restaurant.findOne({ _id: restaurantId, owner: req.user.id });
         if (!restaurant) return res.status(404).json({ success: false, message: 'Restaurant not found or unauthorized.' });
 
-        const item = await MenuItem.create({ 
-            restaurant: restaurant._id, 
-            category: categoryId, 
-            name, description, price, image 
+        const item = await MenuItem.create({
+            restaurant: restaurant._id,
+            category: categoryId,
+            name, description, price, image, itemType, isBestSeller, isTodaysSpecial
         });
         res.status(201).json({ success: true, data: item });
     } catch (error) {
@@ -125,15 +126,15 @@ exports.updateCategory = async (req, res) => {
         const { id } = req.params;
         const { name, order } = req.body;
         console.log(`[DEBUG] Updating Category: id=${id}, user=${req.user?.id}`);
-        
+
         const category = await Category.findById(id);
         if (!category) {
             return res.status(404).json({ success: false, message: 'Category not found.' });
         }
 
-        const restaurant = await Restaurant.findOne({ 
-            _id: category.restaurant, 
-            owner: req.user.id 
+        const restaurant = await Restaurant.findOne({
+            _id: category.restaurant,
+            owner: req.user.id
         });
 
         if (!restaurant) {
@@ -143,7 +144,7 @@ exports.updateCategory = async (req, res) => {
 
         if (name) category.name = name;
         if (order !== undefined) category.order = order;
-        
+
         await category.save();
         res.status(200).json({ success: true, data: category });
     } catch (error) {
@@ -162,9 +163,9 @@ exports.deleteCategory = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Category not found.' });
         }
 
-        const restaurant = await Restaurant.findOne({ 
-            _id: category.restaurant, 
-            owner: req.user.id 
+        const restaurant = await Restaurant.findOne({
+            _id: category.restaurant,
+            owner: req.user.id
         });
 
         if (!restaurant) {
@@ -187,8 +188,8 @@ exports.deleteCategory = async (req, res) => {
 exports.updateMenuItem = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, description, price, image, categoryId, isAvailable } = req.body;
-        console.log(`[DEBUG] Updating Menu Item: id=${id}, user=${req.user?.id}`);
+        const { name, description, price, image, categoryId, isAvailable, itemType, isBestSeller, isTodaysSpecial } = req.body;
+        console.log(`[DEBUG] Updating Menu Item: id=${id}, user=${req.user?.id}`, { name, isBestSeller, isTodaysSpecial });
 
         const item = await MenuItem.findById(id);
         if (!item) return res.status(404).json({ success: false, message: 'Menu item not found.' });
@@ -202,6 +203,12 @@ exports.updateMenuItem = async (req, res) => {
         if (image !== undefined) item.image = image;
         if (categoryId) item.category = categoryId;
         if (isAvailable !== undefined) item.isAvailable = isAvailable;
+        if (itemType !== undefined) item.itemType = itemType;
+        if (isBestSeller !== undefined) item.isBestSeller = isBestSeller;
+        if (isTodaysSpecial !== undefined) {
+            item.isTodaysSpecial = isTodaysSpecial;
+            item.markModified('isTodaysSpecial');
+        }
 
         await item.save();
         res.status(200).json({ success: true, data: item });
