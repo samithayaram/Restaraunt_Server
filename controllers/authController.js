@@ -15,8 +15,8 @@ const sendTokenResponse = (user, statusCode, res) => {
     const options = {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         httpOnly: true,
-        sameSite: 'none',
-        secure: true
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production'
     };
 
     res.status(statusCode).cookie('token', token, options).json({
@@ -116,8 +116,8 @@ exports.logout = async (req, res) => {
     res.cookie('token', 'none', {
         expires: new Date(Date.now() + 10 * 1000),
         httpOnly: true,
-        sameSite: 'none',
-        secure: true
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production'
     });
     
     res.status(200).json({ success: true, data: {} });
