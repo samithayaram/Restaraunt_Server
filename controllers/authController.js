@@ -15,8 +15,8 @@ const sendTokenResponse = (user, statusCode, res) => {
     const options = {
         expires: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
         httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
-        secure: process.env.NODE_ENV === 'production'
+        sameSite: 'none',
+        secure: true
     };
 
     res.status(statusCode).cookie('token', token, options).json({
@@ -34,7 +34,7 @@ const sendTokenResponse = (user, statusCode, res) => {
 exports.register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
-        
+
         // Check if user exists
         const userExists = await User.findOne({ email });
         if (userExists) {
@@ -44,13 +44,13 @@ exports.register = async (req, res) => {
         const user = await User.create({
             name, email, password, role: role || 'RestaurantOwner'
         });
-        
+
         // If it's a restaurant owner, maybe create an initial empty subscription record
         if (user.role === 'RestaurantOwner') {
-            await Subscription.create({ 
-                user: user._id, 
-                status: 'incomplete', 
-                planType: 'monthly' 
+            await Subscription.create({
+                user: user._id,
+                status: 'incomplete',
+                planType: 'monthly'
             });
         }
 
@@ -78,7 +78,7 @@ exports.login = async (req, res) => {
         if (!isMatch) {
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
         }
-        
+
         if (!user.isActive) {
             return res.status(403).json({ success: false, message: 'Your account has been deactivated.' });
         }
@@ -93,12 +93,12 @@ exports.getMe = async (req, res) => {
     try {
         const user = await User.findById(req.user.id);
         let subscription = await Subscription.findOne({ user: req.user.id });
-        
+
         // Auto-create subscription if missing (Set to 'incomplete' so they see the paywall once)
         if (!subscription && user.role === 'RestaurantOwner') {
             subscription = await Subscription.create({
                 user: user._id,
-                status: 'incomplete', 
+                status: 'incomplete',
                 planType: 'monthly'
             });
         }
@@ -119,6 +119,6 @@ exports.logout = async (req, res) => {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production'
     });
-    
+
     res.status(200).json({ success: true, data: {} });
 };
